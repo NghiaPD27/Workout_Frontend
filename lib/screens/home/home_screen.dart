@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../providers/workout_provider.dart';
+import '../schedule/generate_plan_screen.dart';
+import '../schedule/schedule_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,14 +20,17 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProfileProvider>().loadProfile();
+      context.read<WorkoutProvider>().loadCurrentPlan();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final profileProvider = context.watch<ProfileProvider>();
+    final workoutProvider = context.watch<WorkoutProvider>();
     final profile = profileProvider.profile;
     final bodyOverview = profileProvider.bodyOverview;
+    final plan = workoutProvider.currentPlan;
 
     return Scaffold(
       appBar: AppBar(
@@ -72,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     profile == null
                         ? 'Your profile was saved. Workout generation comes next.'
-                        : '${profile.goal.label} • ${profile.daysPerWeek} days/week • ${profile.sessionMinutes} min',
+                        : '${profile.goal.label} - ${profile.daysPerWeek} days/week - ${profile.sessionMinutes} min',
                   ),
                   if (bodyOverview != null) ...[
                     const SizedBox(height: 12),
@@ -100,19 +106,39 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Next milestone',
+                    'Weekly plan',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Phase 3 will connect the backend workout generator and weekly schedule.',
+                  Text(
+                    plan == null
+                        ? 'Generate a schedule from your profile and start date.'
+                        : '${plan.sessions.length} workouts ready from backend rules.',
                   ),
                   const SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: null,
-                    icon: const Icon(Icons.calendar_month),
-                    label: const Text('Generate plan soon'),
-                  ),
+                  if (workoutProvider.isLoading)
+                    const LinearProgressIndicator()
+                  else
+                    FilledButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => plan == null
+                                ? const GeneratePlanScreen()
+                                : const ScheduleScreen(),
+                          ),
+                        );
+                      },
+                      icon: Icon(plan == null ? Icons.auto_awesome : Icons.calendar_month),
+                      label: Text(plan == null ? 'Generate plan' : 'View schedule'),
+                    ),
+                  if (workoutProvider.errorMessage != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      workoutProvider.errorMessage!,
+                      style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    ),
+                  ],
                 ],
               ),
             ),

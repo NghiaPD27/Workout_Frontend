@@ -5,9 +5,11 @@ import 'core/api/api_client.dart';
 import 'core/storage/secure_token_storage.dart';
 import 'providers/auth_provider.dart';
 import 'providers/profile_provider.dart';
+import 'providers/workout_provider.dart';
 import 'screens/auth/auth_gate.dart';
 import 'services/auth_service.dart';
 import 'services/profile_service.dart';
+import 'services/workout_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +18,7 @@ Future<void> main() async {
   final apiClient = ApiClient(tokenStorage);
   final authService = AuthService(apiClient, tokenStorage);
   final profileService = ProfileService(apiClient);
+  final workoutService = WorkoutService(apiClient);
 
   runApp(
     MultiProvider(
@@ -24,11 +27,15 @@ Future<void> main() async {
         Provider.value(value: apiClient),
         Provider.value(value: authService),
         Provider.value(value: profileService),
+        Provider.value(value: workoutService),
         ChangeNotifierProvider(
           create: (_) => AuthProvider(authService, profileService)..bootstrap(),
         ),
         ChangeNotifierProvider(
           create: (_) => ProfileProvider(profileService),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => WorkoutProvider(workoutService),
         ),
       ],
       child: const FitPlanApp(),
