@@ -17,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -30,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final auth = context.watch<AuthProvider>();
 
     return AuthScaffold(
-      title: 'Welcome back',
+      title: 'Welcome Back',
       subtitle: 'Log in to continue your weekly training plan.',
       child: Form(
         key: _formKey,
@@ -43,31 +44,43 @@ class _LoginScreenState extends State<LoginScreen> {
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Email'),
+              decoration: const InputDecoration(
+                labelText: 'Email Address',
+                prefixIcon: Icon(Icons.email_outlined),
+              ),
               validator: _validateEmail,
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             TextFormField(
               key: const Key('loginPasswordField'),
               controller: _passwordController,
-              obscureText: true,
+              obscureText: _obscurePassword,
               textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(labelText: 'Password'),
+              decoration: InputDecoration(
+                labelText: 'Password',
+                prefixIcon: const Icon(Icons.lock_outline_rounded),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  ),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
+              ),
               validator: _validatePassword,
               onFieldSubmitted: (_) => _submit(),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             ElevatedButton(
               key: const Key('loginSubmitButton'),
               onPressed: auth.isLoading ? null : _submit,
               child: auth.isLoading
                   ? const SizedBox.square(
-                      dimension: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      dimension: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                     )
-                  : const Text('Log in'),
+                  : const Text('Log In'),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             TextButton(
               onPressed: auth.isLoading
                   ? null
@@ -76,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         MaterialPageRoute(builder: (_) => const RegisterScreen()),
                       );
                     },
-              child: const Text('Create an account'),
+              child: const Text('Create a new account'),
             ),
           ],
         ),

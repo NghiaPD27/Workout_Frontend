@@ -17,6 +17,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -31,7 +32,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final auth = context.watch<AuthProvider>();
 
     return AuthScaffold(
-      title: 'Create your plan',
+      title: 'Create Your Plan',
       subtitle: 'Start with an account, then set your body and training goals.',
       child: Form(
         key: _formKey,
@@ -43,40 +44,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
               key: const Key('registerNameField'),
               controller: _nameController,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Name'),
+              decoration: const InputDecoration(
+                labelText: 'Full Name',
+                prefixIcon: Icon(Icons.person_outline_rounded),
+              ),
               validator: _validateName,
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             TextFormField(
               key: const Key('registerEmailField'),
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Email'),
+              decoration: const InputDecoration(
+                labelText: 'Email Address',
+                prefixIcon: Icon(Icons.email_outlined),
+              ),
               validator: _validateEmail,
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             TextFormField(
               key: const Key('registerPasswordField'),
               controller: _passwordController,
-              obscureText: true,
+              obscureText: _obscurePassword,
               textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(labelText: 'Password'),
+              decoration: InputDecoration(
+                labelText: 'Password',
+                prefixIcon: const Icon(Icons.lock_outline_rounded),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  ),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
+              ),
               validator: _validatePassword,
               onFieldSubmitted: (_) => _submit(),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             ElevatedButton(
               key: const Key('registerSubmitButton'),
               onPressed: auth.isLoading ? null : _submit,
               child: auth.isLoading
                   ? const SizedBox.square(
-                      dimension: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      dimension: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                     )
-                  : const Text('Create account'),
+                  : const Text('Create Account'),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             TextButton(
               onPressed: auth.isLoading ? null : () => Navigator.of(context).pop(),
               child: const Text('I already have an account'),

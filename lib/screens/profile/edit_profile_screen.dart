@@ -4,27 +4,50 @@ import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../models/user_profile.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../widgets/form_error_text.dart';
 
-class ProfileOnboardingScreen extends StatefulWidget {
-  const ProfileOnboardingScreen({super.key});
+class EditProfileScreen extends StatefulWidget {
+  final UserProfile? initialProfile;
+
+  const EditProfileScreen({super.key, this.initialProfile});
 
   @override
-  State<ProfileOnboardingScreen> createState() => _ProfileOnboardingScreenState();
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
+class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _heightController = TextEditingController(text: '170');
-  final _weightController = TextEditingController(text: '65');
-  final _daysController = TextEditingController(text: '3');
-  final _minutesController = TextEditingController(text: '30');
-  DateTime? _birthDate;
-  ActivityLevel _activityLevel = ActivityLevel.low;
-  ExperienceLevel _experienceLevel = ExperienceLevel.beginner;
-  FitnessGoal _goal = FitnessGoal.improveFitness;
+  late final TextEditingController _heightController;
+  late final TextEditingController _weightController;
+  late final TextEditingController _daysController;
+  late final TextEditingController _minutesController;
+  late DateTime? _birthDate;
+  late ActivityLevel _activityLevel;
+  late ExperienceLevel _experienceLevel;
+  late FitnessGoal _goal;
+
+  @override
+  void initState() {
+    super.initState();
+    final profile = widget.initialProfile;
+    _heightController = TextEditingController(
+      text: '${profile?.heightCm ?? 170}',
+    );
+    _weightController = TextEditingController(
+      text: _formatWeight(profile?.weightKg ?? 65.0),
+    );
+    _daysController = TextEditingController(
+      text: '${profile?.daysPerWeek ?? 3}',
+    );
+    _minutesController = TextEditingController(
+      text: '${profile?.sessionMinutes ?? 30}',
+    );
+    _birthDate = profile?.birthDate;
+    _activityLevel = profile?.activityLevel ?? ActivityLevel.low;
+    _experienceLevel = profile?.experienceLevel ?? ExperienceLevel.beginner;
+    _goal = profile?.goal ?? FitnessGoal.improveFitness;
+  }
 
   @override
   void dispose() {
@@ -40,18 +63,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
     final profileProvider = context.watch<ProfileProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Set up profile'),
-        actions: [
-          IconButton(
-            tooltip: 'Log out',
-            onPressed: profileProvider.isLoading
-                ? null
-                : () => context.read<AuthProvider>().logout(),
-            icon: const Icon(Icons.logout_rounded),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Edit profile')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -63,7 +75,6 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Header Banner
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -79,26 +90,28 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Your Starting Point 🎯',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                ),
+                            'Tune your plan',
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.w800),
                           ),
                           const SizedBox(height: 6),
                           const Text(
-                            'FitPlan uses your stats to generate tailored weekly routines.',
-                            style: TextStyle(color: AppColors.textSecondary, height: 1.4),
+                            'Update your stats and training preferences so future plans stay useful.',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              height: 1.4,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 20),
                     FormErrorText(message: profileProvider.errorMessage),
-
-                    // Birth date picker
                     OutlinedButton.icon(
-                      key: const Key('birthDateButton'),
-                      onPressed: _pickBirthDate,
+                      key: const Key('editBirthDateButton'),
+                      onPressed: profileProvider.isLoading
+                          ? null
+                          : _pickBirthDate,
                       icon: const Icon(Icons.calendar_today_rounded, size: 20),
                       label: Text(
                         _birthDate == null
@@ -107,14 +120,13 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-
-                    // Height & Weight Row
                     Row(
                       children: [
                         Expanded(
                           child: TextFormField(
-                            key: const Key('heightField'),
+                            key: const Key('editHeightField'),
                             controller: _heightController,
+                            enabled: !profileProvider.isLoading,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
                               labelText: 'Height (cm)',
@@ -126,9 +138,12 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: TextFormField(
-                            key: const Key('weightField'),
+                            key: const Key('editWeightField'),
                             controller: _weightController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            enabled: !profileProvider.isLoading,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
                             decoration: const InputDecoration(
                               labelText: 'Weight (kg)',
                               prefixIcon: Icon(Icons.monitor_weight_outlined),
@@ -139,44 +154,42 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-
-                    // Activity Level Dropdown
                     _EnumDropdown<ActivityLevel>(
                       label: 'Activity Level',
                       value: _activityLevel,
                       values: ActivityLevel.values,
+                      enabled: !profileProvider.isLoading,
                       labelBuilder: (value) => value.label,
-                      onChanged: (value) => setState(() => _activityLevel = value),
+                      onChanged: (value) =>
+                          setState(() => _activityLevel = value),
                     ),
                     const SizedBox(height: 16),
-
-                    // Experience Level Dropdown
                     _EnumDropdown<ExperienceLevel>(
                       label: 'Training Experience',
                       value: _experienceLevel,
                       values: ExperienceLevel.values,
+                      enabled: !profileProvider.isLoading,
                       labelBuilder: (value) => value.label,
-                      onChanged: (value) => setState(() => _experienceLevel = value),
+                      onChanged: (value) =>
+                          setState(() => _experienceLevel = value),
                     ),
                     const SizedBox(height: 16),
-
-                    // Fitness Goal Dropdown
                     _EnumDropdown<FitnessGoal>(
                       label: 'Fitness Goal',
                       value: _goal,
                       values: FitnessGoal.values,
+                      enabled: !profileProvider.isLoading,
                       labelBuilder: (value) => value.label,
                       onChanged: (value) => setState(() => _goal = value),
                     ),
                     const SizedBox(height: 16),
-
-                    // Schedule Preferences Row
                     Row(
                       children: [
                         Expanded(
                           child: TextFormField(
-                            key: const Key('daysPerWeekField'),
+                            key: const Key('editDaysPerWeekField'),
                             controller: _daysController,
+                            enabled: !profileProvider.isLoading,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
                               labelText: 'Days / Week',
@@ -188,8 +201,9 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: TextFormField(
-                            key: const Key('sessionMinutesField'),
+                            key: const Key('editSessionMinutesField'),
                             controller: _minutesController,
+                            enabled: !profileProvider.isLoading,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
                               labelText: 'Min / Session',
@@ -201,17 +215,18 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
                       ],
                     ),
                     const SizedBox(height: 28),
-
-                    // Submit Button
                     ElevatedButton(
-                      key: const Key('profileSubmitButton'),
+                      key: const Key('editProfileSubmitButton'),
                       onPressed: profileProvider.isLoading ? null : _submit,
                       child: profileProvider.isLoading
                           ? const SizedBox.square(
                               dimension: 22,
-                              child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.white,
+                              ),
                             )
-                          : const Text('Save Profile'),
+                          : const Text('Update Profile'),
                     ),
                   ],
                 ),
@@ -256,23 +271,27 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
 
     final payload = ProfilePayload(
       birthDate: _birthDate,
-      heightCm: int.parse(_heightController.text),
-      weightKg: double.parse(_weightController.text),
+      heightCm: int.parse(_heightController.text.trim()),
+      weightKg: double.parse(_weightController.text.trim()),
       activityLevel: _activityLevel,
       experienceLevel: _experienceLevel,
       goal: _goal,
-      daysPerWeek: int.parse(_daysController.text),
-      sessionMinutes: int.parse(_minutesController.text),
+      daysPerWeek: int.parse(_daysController.text.trim()),
+      sessionMinutes: int.parse(_minutesController.text.trim()),
     );
 
     final saved = await context.read<ProfileProvider>().saveProfile(payload);
     if (saved && mounted) {
-      await context.read<AuthProvider>().markProfileComplete();
+      Navigator.of(context).pop(true);
     }
   }
 
+  String _formatWeight(double value) {
+    return value % 1 == 0 ? value.toStringAsFixed(0) : value.toString();
+  }
+
   String? _validateInt(String? value, int min, int max) {
-    final number = int.tryParse(value ?? '');
+    final number = int.tryParse(value?.trim() ?? '');
     if (number == null) {
       return 'Required';
     }
@@ -283,7 +302,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
   }
 
   String? _validateWeight(String? value) {
-    final number = double.tryParse(value ?? '');
+    final number = double.tryParse(value?.trim() ?? '');
     if (number == null) {
       return 'Required';
     }
@@ -298,6 +317,7 @@ class _EnumDropdown<T> extends StatelessWidget {
   final String label;
   final T value;
   final List<T> values;
+  final bool enabled;
   final String Function(T value) labelBuilder;
   final ValueChanged<T> onChanged;
 
@@ -305,6 +325,7 @@ class _EnumDropdown<T> extends StatelessWidget {
     required this.label,
     required this.value,
     required this.values,
+    required this.enabled,
     required this.labelBuilder,
     required this.onChanged,
   });
@@ -326,11 +347,13 @@ class _EnumDropdown<T> extends StatelessWidget {
             ),
           )
           .toList(),
-      onChanged: (value) {
-        if (value != null) {
-          onChanged(value);
-        }
-      },
+      onChanged: enabled
+          ? (value) {
+              if (value != null) {
+                onChanged(value);
+              }
+            }
+          : null,
     );
   }
 }

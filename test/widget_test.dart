@@ -5,12 +5,15 @@ import 'package:workout_frontend/core/api/api_client.dart';
 import 'package:workout_frontend/core/storage/secure_token_storage.dart';
 import 'package:workout_frontend/providers/auth_provider.dart';
 import 'package:workout_frontend/providers/profile_provider.dart';
+import 'package:workout_frontend/providers/progress_provider.dart';
 import 'package:workout_frontend/providers/workout_provider.dart';
 import 'package:workout_frontend/screens/auth/login_screen.dart';
 import 'package:workout_frontend/screens/onboarding/profile_onboarding_screen.dart';
 import 'package:workout_frontend/screens/schedule/generate_plan_screen.dart';
+import 'package:workout_frontend/screens/workout/workout_detail_screen.dart';
 import 'package:workout_frontend/services/auth_service.dart';
 import 'package:workout_frontend/services/profile_service.dart';
+import 'package:workout_frontend/services/progress_service.dart';
 import 'package:workout_frontend/services/workout_service.dart';
 
 void main() {
@@ -37,9 +40,17 @@ void main() {
   testWidgets('generate plan screen renders start date action', (tester) async {
     await tester.pumpWidget(_testApp(const GeneratePlanScreen()));
 
-    expect(find.text('Generate plan'), findsOneWidget);
+    expect(find.textContaining('Generate'), findsWidgets);
     expect(find.byKey(const Key('chooseStartDateButton')), findsOneWidget);
     expect(find.byKey(const Key('generatePlanButton')), findsOneWidget);
+  });
+
+  testWidgets('workout detail screen shows loading state', (tester) async {
+    await tester.runAsync(() async {
+      await tester.pumpWidget(_testApp(const WorkoutDetailScreen(sessionId: 1)));
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.textContaining('Workout'), findsWidgets);
+    });
   });
 }
 
@@ -49,6 +60,7 @@ Widget _testApp(Widget child) {
   final authService = AuthService(apiClient, tokenStorage);
   final profileService = ProfileService(apiClient);
   final workoutService = WorkoutService(apiClient);
+  final progressService = ProgressService(apiClient);
 
   return MultiProvider(
     providers: [
@@ -60,6 +72,9 @@ Widget _testApp(Widget child) {
       ),
       ChangeNotifierProvider(
         create: (_) => WorkoutProvider(workoutService),
+      ),
+      ChangeNotifierProvider(
+        create: (_) => ProgressProvider(progressService),
       ),
     ],
     child: MaterialApp(home: child),

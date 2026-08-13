@@ -36,4 +36,30 @@ class WorkoutService {
       rethrow;
     }
   }
+
+  Future<WorkoutSessionDetail> getSessionDetail(int sessionId) async {
+    final response = await _apiClient.dio.get<Map<String, dynamic>>(
+      ApiEndpoints.workoutSession(sessionId),
+    );
+    final data = response.data;
+    if (data == null) {
+      throw StateError('Workout session response was empty');
+    }
+    return WorkoutSessionDetail.fromJson(data);
+  }
+
+  Future<WorkoutSessionDetail> completeSession({
+    required int sessionId,
+    required int durationMinutes,
+  }) async {
+    final response = await _apiClient.dio.post<Map<String, dynamic>>(
+      ApiEndpoints.completeWorkoutSession(sessionId),
+      data: {'durationMinutes': durationMinutes},
+    );
+    final data = response.data;
+    if (data == null) {
+      throw StateError('Complete workout response was empty');
+    }
+    return WorkoutSessionDetail.fromJson(data);
+  }
 }
